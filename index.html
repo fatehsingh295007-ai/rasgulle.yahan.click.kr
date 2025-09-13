@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>1.5 Futiyee yahan click krein</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+  html, body {margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; background: #fff; color: #b74e65; overflow-y: auto; height:100%;}
+  .background-hearts {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh;
+    z-index: 1;
+    pointer-events: none;
+    background: transparent;
+    overflow: hidden;
+  }
+  .heart-zone, .popup-hearts {
+    pointer-events: none;
+    position: absolute;
+    top:0; left:0; width:100%; height:100%; z-index:2;
+    overflow: visible;
+  }
+  .popup-hearts { z-index:21;}
+  .heart, .bg-heart, .popup-heart {
+    position: absolute;
+    background: #efa8b8;
+    opacity: 0.79;
+    transform: rotate(45deg);
+    border-radius: 3px 3px 0 0;
+    filter: drop-shadow(0 0 3px #efa8b8cc);
+  }
+  .heart::before, .heart::after, .bg-heart::before, .bg-heart::after, .popup-heart::before, .popup-heart::after {
+    content: '';
+    position: absolute;
+    background: #efa8b8;
+    border-radius: 50%;
+  }
+  .heart::before, .bg-heart::before, .popup-heart::before { width: 100%; height: 100%; top: -50%; left: 0;}
+  .heart::after, .bg-heart::after, .popup-heart::after { width: 100%; height: 100%; left: 50%; top: 0;}
+  @keyframes floatHeart { 0% {opacity:0.91;transform:translateY(0) rotate(45deg);} 100% {opacity:0.1;transform:translateY(-80px) rotate(45deg);}}
+  @keyframes floatBgHeart {0%{opacity:0.8;transform:translateY(0) rotate(45deg);}100%{opacity:0.15;transform:translateY(-120vh) rotate(45deg);}}
+  @keyframes floatPopupHeart {0%{opacity:0.7;transform:translateY(0) rotate(45deg);}100%{opacity:0.07;transform:translateY(-160px) rotate(60deg);}}
+  
+  button {
+    background: #efa8b8; border: none; border-radius: 35px; color: white;
+    font-size: 1.3rem; padding: 13px 36px; cursor: pointer; font-weight: 700; transition:.3s;margin-top:18px;
+    box-shadow: 0 8px 25px rgba(239, 168, 184, 0.5);
+  }
+  button:hover{background:#d08195;}
+  canvas#gameCanvas { background:transparent; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:5;}
+  
+  .popup {
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#fff0f5;
+    border:2px solid #efa8b8;
+    border-radius:22px;
+    max-width:450px;
+    width:92vw;
+    min-width:0;
+    box-shadow:0 18px 50px 10px rgba(239,168,184,0.2);
+    color:#b74e65;
+    padding:18px 14px 22px 14px;
+    z-index:20;
+    text-align:center;
+  }
+  .popup.show{display:block;}
+  .popup h2, .popup h3 {margin-top:0;}
+  .popup .popup-msg-content {
+    max-height:52vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    scroll-behavior:smooth;
+    padding-right:9px;
+    font-size:1.05rem;
+  }
+  @media (min-width:600px){
+    .popup{max-width:500px;}
+  }
+  @media (max-width:700px){
+    .popup { max-width:98vw; width:98vw; padding:9px 3vw 14px 3vw; font-size:1rem;}
+    .popup .popup-msg-content{max-height:58vh; font-size:1rem;}
+    button{font-size:1.05rem;}
+    .heart, .popup-heart, .bg-heart {width:13px!important; height:13px!important;}
+  }
+</style>
+</head>
+<body>
+<div class="background-hearts"></div>
+<div class="heart-zone"></div>
+<canvas id="gameCanvas"></canvas>
+
+<!-- Intro Popup -->
+<div id="intro" class="popup show" role="dialog" aria-modal="true" aria-labelledby="introHeader">
+  <div class="popup-hearts"></div>
+  <h2 id="introHeader">This is a small game for you!</h2>
+  <div class="popup-msg-content">
+    <p>Catch the falling hearts with your catcher.</p>
+  </div>
+  <button id="startGameBtn">Start Game</button>
+</div>
+<!-- Missed Popup -->
+<div id="missedPopup" class="popup" role="dialog" aria-modal="true" aria-labelledby="missedHeader">
+  <div class="popup-hearts"></div>
+  <h3 id="missedHeader">Oops! You missed a heart!</h3>
+  <div class="popup-msg-content">
+    <p>Even if you miss hearts in the game, you'll never miss mine! 💖</p>
+  </div>
+  <button id="toClickPopupBtn">Next</button>
+</div>
+<!-- Click Popup -->
+<div id="clickPopup" class="popup" role="dialog" aria-modal="true" aria-labelledby="clickHeader">
+  <div class="popup-hearts"></div>
+  <div class="popup-msg-content">
+    <p id="clickHeader"><b>Rasgulle ki shakal ke yahan click krein</b></p>
+  </div>
+  <button id="showFinalMsgBtn">Click Karo!</button>
+</div>
+<!-- Special Message Popup -->
+<div id="finalMsg" class="popup" role="dialog" aria-modal="true" aria-labelledby="finalHeader" tabindex="0">
+  <div class="popup-hearts"></div>
+  <h2 id="finalHeader">Special Message</h2>
+  <div class="popup-msg-content">
+    <p>
+      Congratsss!  
+      Agar tujhe mera ye message mil raha hai, iska matlab apni waitingship ko one week ho chuka hai. Isliye mujhe yeh ek chhoti si baat bolni thi.<br><br>
+      It’s been a while since we last talked, and I just wanted to let you know that you’ve been on my mind a lot. Even though the distance keeps us apart, it doesn’t change how much I care about you. Life gets busy and chaotic, but I hope we can catch up soon and share some good laughs like we always do.<br><br>
+      Until then, take care of yourself, stay happy, and remember that someone far away is thinking about you and wishing you all the best.<br><br>
+      So, stay awesome meri 1.5 futiyee! Miss you loads and sending virtual hugs with 1000% extra pyaar! Tata!!
+    </p>
+  </div>
+</div>
+
+<script>
+  // Heart animations for background and borders
+  function floatHeartsBackground(){
+    const bgzone=document.querySelector('.background-hearts');
+    setInterval(()=>{
+      const heart=document.createElement('div');
+      heart.className='bg-heart';
+      let size=18+Math.random()*28;
+      heart.style.width=heart.style.height=size+'px';
+      heart.style.left=Math.random()*window.innerWidth+'px';
+      heart.style.top=window.innerHeight+80+'px';
+      let duration=5+Math.random()*5;
+      heart.style.animation=`floatBgHeart ${duration}s linear forwards`;
+      bgzone.appendChild(heart);
+      setTimeout(()=>heart.remove(),duration*1000+1700);
+    },420);
+  }
+  function floatHeartsSide(){
+    const zone = document.querySelector('.heart-zone');
+    const cHeight = window.innerHeight;
+    const cWidth = window.innerWidth;
+    function createHeart(side) {
+      const heart = document.createElement('div');
+      heart.classList.add('heart');
+      let size = 16 + Math.random() * 12;
+      heart.style.width = heart.style.height = size + 'px';
+      let duration = 3 + Math.random() * 2;
+      if (side === 'left') {
+        heart.style.left = -size * 0.5 + 'px';
+        heart.style.top = Math.random() * cHeight + 'px';
+        heart.style.animation = `floatHeart ${duration}s linear forwards`;
+      } else if (side === 'right') {
+        heart.style.left = cWidth - size * 0.7 + 'px';
+        heart.style.top = Math.random() * cHeight + 'px';
+        heart.style.animation = `floatHeart ${duration}s linear forwards`;
+      } else if (side === 'top') {
+        heart.style.top = -size + 'px';
+        heart.style.left = Math.random() * cWidth + 'px';
+        heart.style.animation = `floatHeartTop ${duration}s linear forwards`;
+      } else {
+        heart.style.top = cHeight - size * 0.5 + 'px';
+        heart.style.left = Math.random() * cWidth + 'px';
+        heart.style.animation = `floatHeartBottom ${duration}s linear forwards`;
+      }
+      zone.appendChild(heart);
+      setTimeout(() => heart.remove(), duration * 1000 + 1200);
+    }
+    setInterval(() => createHeart('left'), 500);
+    setInterval(() => createHeart('right'), 520);
+    setInterval(() => createHeart('top'), 700);
+    setInterval(() => createHeart('bottom'), 720);
+  }
+  // Hearts on each popup
+  function floatPopupHearts(container){
+    function createPopupHeart(){
+      const heart=document.createElement('div');
+      heart.className='popup-heart';
+      let size=11+Math.random()*7;
+      heart.style.width=heart.style.height=size+'px';
+      let isLeft=Math.random()>0.5;
+      heart.style.left=(isLeft?'-8px':'unset');
+      heart.style.right=(isLeft?'unset':'-8px');
+      heart.style.top=8+Math.random()*78+'px';
+      heart.style.opacity=0.45+Math.random()*0.32;
+      let duration=2+Math.random()*2.4;
+      heart.style.animation=`floatPopupHeart ${duration}s linear forwards`;
+      container.appendChild(heart);
+      setTimeout(()=>heart.remove(),duration*1000+800);
+    }
+    setInterval(createPopupHeart,690);
+  }
+  // Run hearts on all popup boxes
+  document.querySelectorAll('.popup-hearts').forEach(floatPopupHearts);
+  window.addEventListener('DOMContentLoaded',()=>{
+    floatHeartsBackground();
+    floatHeartsSide();
+  });
+
+  // Game logic (as before)
+  const canvas=document.getElementById('gameCanvas');
+  const ctx=canvas.getContext('2d');
+  let width,height;
+  function resizeCanvas(){width=window.innerWidth;height=window.innerHeight;canvas.width=width;canvas.height=height;}
+  window.addEventListener('resize',resizeCanvas);resizeCanvas();
+  function drawHeart(x,y,size,color){
+    ctx.save();ctx.translate(x,y);ctx.scale(size/20,size/20);
+    ctx.beginPath();ctx.moveTo(0,0);
+    ctx.bezierCurveTo(0,-3,-5,-3,-5,0);ctx.bezierCurveTo(-5,5,0,7,0,10);
+    ctx.bezierCurveTo(0,7,5,5,5,0);ctx.bezierCurveTo(5,-3,0,-3,0,0);
+    ctx.fillStyle=color;ctx.fill();ctx.restore();
+  }
+  class Heart {constructor(){this.x=Math.random()*(width-40)+20;this.y=-10;this.size=20+Math.random()*15;this.speed=2+Math.random()*2;this.missed=false;}
+    update(){this.y+=this.speed;if(this.y>height)this.missed=true;}
+    draw(){drawHeart(this.x,this.y,this.size,'#efa8b8');}
+  }
+  class Catcher{constructor(){this.width=120;this.height=20;this.x=width/2-this.width/2;this.y=height-40;}
+    move(x){this.x=x-this.width/2;if(this.x<0)this.x=0;if(this.x+this.width>width)this.x=width-this.width;}
+    draw(){ctx.fillStyle='#efa8b8';ctx.shadowColor='#efa8b888';ctx.shadowBlur=15;ctx.fillRect(this.x,this.y,this.width,this.height);ctx.shadowBlur=0;}
+  }
+  let hearts=[],catcher,gameLoopInterval,spawnInterval,missedHeart=false;
+  function startGame(){hearts=[];catcher=new Catcher();missedHeart=false;
+    hearts.push(new Heart());
+    document.getElementById('intro').classList.remove('show');
+    canvas.style.display='block';
+    gameLoopInterval=setInterval(gameLoop,30);
+    spawnInterval=setInterval(()=>{if(hearts.length<10)hearts.push(new Heart());},800);
+  }
+  function gameLoop(){
+    ctx.clearRect(0,0,width,height); catcher.draw();
+    for(let i=hearts.length-1;i>=0;i--){
+      let heart=hearts[i];heart.update();heart.draw();
+      if(!heart.missed&&heart.y+heart.size/2>=catcher.y&&heart.x>=catcher.x&&heart.x<=catcher.x+catcher.width){hearts.splice(i,1);}
+      else if(heart.missed){hearts.splice(i,1);missedHeart=true;endGameMissed();return;}
+    }
+  }
+  function endGameMissed(){
+    clearInterval(gameLoopInterval); clearInterval(spawnInterval); canvas.style.display='none';
+    document.getElementById('missedPopup').classList.add('show');
+  }
+  document.getElementById('startGameBtn').addEventListener('click',startGame);
+  document.getElementById('toClickPopupBtn').addEventListener('click',()=>{
+    document.getElementById('missedPopup').classList.remove('show');
+    document.getElementById('clickPopup').classList.add('show');
+  });
+  document.getElementById('showFinalMsgBtn').addEventListener('click',()=>{
+    document.getElementById('clickPopup').classList.remove('show');
+    document.getElementById('finalMsg').classList.add('show');
+    document.getElementById('finalMsg').focus();
+  });
+  window.addEventListener('mousemove',(e)=>{if(catcher)catcher.move(e.clientX);});
+  window.addEventListener('touchmove',(e)=>{if(catcher){catcher.move(e.touches[0].clientX);e.preventDefault();}}, { passive: false });
+</script>
+</body>
+</html>
